@@ -15,7 +15,7 @@ export interface Station {
     northIsland?: boolean
 }
 
-export const stations: Station[] = [
+const stations: Station[] = [
     {
         x: 174.3207891,
         y: -35.72011822,
@@ -4938,4 +4938,6 @@ export const stations: Station[] = [
     }
 ]
 
-
+export function getStations(){
+    return stations;
+}
