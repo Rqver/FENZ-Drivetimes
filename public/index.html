@@ -1,0 +1,38 @@
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>FENZ Drive Times Map</title>
+    <link href="/css/tailwind.css" rel="stylesheet">
+    <script src="https://js.arcgis.com/4.34/"></script>
+    <link rel="stylesheet" href="https://js.arcgis.com/4.34/esri/themes/dark/main.css"/>
+</head>
+<body class="min-h-screen bg-zinc-950 text-slate-100">
+<div class="mx-auto max-w-7xl px-4 py-6 space-y-6">
+    <header class="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
+        <h1 class="text-2xl font-semibold">FENZ Drive Times Map</h1>
+
+        <div class="relative w-full md:w-96">
+            <input type="text" placeholder="Search…" class="w-full rounded-lg border border-zinc-800 bg-zinc-900 px-4 py-2 pr-10 text-sm placeholder-slate-400 focus:border-emerald-500 focus:outline-none focus:ring-2 focus:ring-emerald-500/20"/>
+        </div>
+    </header>
+
+    <div class="grid gap-6 lg:grid-cols-[1fr_360px]">
+        <div class="relative h-[70vh] w-full overflow-hidden rounded-xl border border-zinc-800">
+            <div id="map" class="absolute inset-0"></div>
+        </div>
+
+        <aside class="space-y-4 rounded-xl border border-zinc-800 bg-zinc-900 p-4">
+            <h2 class="text-lg font-medium">Text goes here</h2>
+
+            <p class="text-sm text-zinc-400">
+                - explain added time to volunteer + rural stations <br/>
+                - explain colours/keys <br/>
+                - explain career toggle for strikes (we need a toggle for career) <br/>
+            </p>
+        </aside>
+    </div>
+</div>
+</body>
+<script src="/js/map.js"></script>
+</html>
