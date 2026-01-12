@@ -82,6 +82,8 @@ require([
         }
     }
 
-
-    console.log(json)
+    view.when(() => {
+      const loader = document.getElementById("map-loading");
+      if (loader) loader.remove();
+    });
 })
