@@ -46,7 +46,7 @@ export async function getDriveTimes(x: number, y: number, strike = false){
         return {
             station,
             driveTime: Math.round(directions.driveTime / 60),
-            distance: directions.distance,
+            distance: directions.distance / 1000,
             directions: directions.json
         }
     })
