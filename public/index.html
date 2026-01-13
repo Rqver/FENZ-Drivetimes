@@ -19,7 +19,11 @@
 
     <div class="grid gap-6 lg:grid-cols-[1fr_360px]">
         <div class="relative h-[70vh] w-full overflow-hidden rounded-xl border border-zinc-800">
-            <div id="map" class="absolute inset-0"></div>
+            <div id="map" class="absolute inset-0">
+                <button id="exit-routes" class="cursor-pointer absolute right-3 top-3 z-20 hidden rounded bg-zinc-900 px-3 py-1 text-sm">
+                    Exit Address View ✕
+                </button>
+            </div>
 
             <div id="map-loading" class="absolute inset-0 z-10 flex items-center justify-center bg-zinc-950/80 text-sm text-zinc-300">
                 <span class="flex items-center gap-2">
@@ -88,9 +92,27 @@
 
                 <hr class="border-zinc-800">
 
-                <p class="text-xs text-zinc-500">
-                    right click on any address or search.... when you do, it hides the other layers and puts the actual routes each of the stations would take onto the map. nzpfu strike toggle should work on this bit too, same with volunteer delay. then a little x to hide the routes and go back to normal layers.
-                </p>
+                <div id="default-sidebar">
+                    <p class="text-sm text-zinc-300">
+                        Right click on any address or use the search bar to view responses to that address.
+                        <br><br>
+                        You can toggle the Strike or Volunteer Delay options to see how they affect the response times for that specific location.
+                    </p>
+            </div>
+
+            <div id="route-sidebar" class="hidden space-y-4 animate-in fade-in slide-in-from-bottom-4 duration-300">
+                <div>
+                    <h3 class="text-xs font-bold uppercase tracking-wider text-zinc-500">Selected Location</h3>
+                    <p id="route-address" class="mt-1 text-sm font-medium text-slate-100 leading-snug">
+                    </p>
+                </div>
+
+                <div>
+                    <h3 class="mb-3 text-xs font-bold uppercase tracking-wider text-zinc-500">Responding Stations</h3>
+                    <ul id="route-station-list" class="space-y-2">
+                    </ul>
+                </div>
+            </div>
             </div>
         </aside>
     </div>

@@ -63,20 +63,3 @@ export async function getStationsTable(scenario: Scenario): Promise<StationTable
   const data = await loadJson(FINAL(scenario.geometry, scenario.strike));
   return data ?? [];
 }
-
-export async function getStandardStationsTable(): Promise<StationTable[]> {
-  return getStationsTable({ geometry: "standard", strike: false });
-}
-
-export async function getVolunteerDelayStationsTable(): Promise<StationTable[]> {
-  return getStationsTable({ geometry: "volunteerDelay", strike: false });
-}
-
-export async function getStrikeStationsTable(): Promise<StationTable[]> {
-  return getStationsTable({ geometry: "standard", strike: true });
-}
-
-export async function getStrikeVolunteerDelayStationsTable(): Promise<StationTable[]> {
-  return getStationsTable({ geometry: "volunteerDelay", strike: true });
-}
-

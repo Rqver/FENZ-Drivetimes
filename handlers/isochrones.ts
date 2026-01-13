@@ -4,7 +4,6 @@ import {haversine, safeDifference} from "../util/geography.ts";
 
 const ORS_URL = Deno.env.get("OPEN_ROUTE_SERVICE_URL");
 
-
 export async function calculateResponseTimePolygon(station: Station, opts?: { volunteerDelay?: boolean }) {
     if (!ORS_URL) return console.warn("No ORS URL in ENV");
 

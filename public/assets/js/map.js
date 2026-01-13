@@ -4,7 +4,7 @@ require([
     "esri/layers/GraphicsLayer",
     "esri/Graphic"
 ], async (Map, MapView, GraphicsLayer, Graphic) => {
-    const map = new Map({basemap: "dark-gray-vector"});
+    const map = new Map({ basemap: "dark-gray-vector" });
     const view = new MapView({
         container: "map",
         map: map,
@@ -19,12 +19,23 @@ require([
         volunteerStrike: new GraphicsLayer({ title: "Vol Delay + Strike", visible: false })
     };
 
-    map.addMany([
-        layers.normal,
-        layers.strike,
-        layers.volunteer,
-        layers.volunteerStrike
-    ]);
+    map.addMany([layers.normal, layers.strike, layers.volunteer, layers.volunteerStrike]);
+
+    const routeLayer = new GraphicsLayer({ title: "Routes", visible: false });
+    map.add(routeLayer);
+
+    const strikeToggle = document.getElementById("strike-toggle");
+    const volToggle = document.getElementById("volunteer-toggle");
+    const exitBtn = document.getElementById("exit-routes");
+    const loader = document.getElementById("map-loading");
+
+    const defaultSidebar = document.getElementById("default-sidebar");
+    const routeSidebar = document.getElementById("route-sidebar");
+    const routeAddressEl = document.getElementById("route-address");
+    const routeStationListEl = document.getElementById("route-station-list");
+
+    let currentMode = "layer"; // 'layer' or 'route'
+    let lastClickedPoint = null; // Stores {latitude, longitude}
 
     const fetchAndBuildLayer = async (url, targetLayer) => {
         try {
@@ -34,10 +45,8 @@ require([
 
             for (const station of json) {
                 const polys = [];
-
                 for (const feature of station.table) {
                     const coords = feature.geometry.coordinates;
-
                     if (feature.geometry.type === "MultiPolygon") {
                         for (const poly of coords) {
                             polys.push({ rings: poly, time: Number(feature.properties.value) });
@@ -49,7 +58,6 @@ require([
 
                 for (const item of polys) {
                     let colour;
-
                     if (item.time <= 480) colour = "rgba(80,200,120,0.2)";
                     else if (item.time <= 600) colour = "rgba(255,165,0,0.2)";
                     else if (item.time <= 900) colour = "rgba(205,28,24,0.2)";
@@ -65,7 +73,6 @@ require([
                     }));
                 }
             }
-
             targetLayer.addMany(graphicsToAdd);
             return true;
         } catch (error) {
@@ -74,24 +81,18 @@ require([
         }
     };
 
-    await fetchAndBuildLayer("/api/stations", layers.normal);
+    const drawRoute = (fc, colour) => {
+        const feature = fc.features[0];
+        routeLayer.add(new Graphic({
+            geometry: { type: "polyline", paths: feature.geometry.coordinates },
+            symbol: { type: "simple-line", width: 3, color: colour },
+            attributes: { duration: feature.properties.summary.duration }
+        }));
+    };
 
-    view.when(() => {
-        const loader = document.getElementById("map-loading");
-        if (loader) loader.remove();
-    });
+    const updateLayerVisibility = () => {
+        if (currentMode === "route") return;
 
-    (async () => {
-        await fetchAndBuildLayer("/api/strike-stations", layers.strike);
-        await fetchAndBuildLayer("/api/volunteer-stations", layers.volunteer);
-        await fetchAndBuildLayer("/api/volunteer-strike-stations", layers.volunteerStrike);
-    })();
-
-
-    const strikeToggle = document.getElementById("strike-toggle");
-    const volToggle = document.getElementById("volunteer-toggle");
-
-    const updateVisibility = () => {
         const isStrike = strikeToggle.checked;
         const isVolDelay = volToggle.checked;
 
@@ -100,17 +101,129 @@ require([
         layers.volunteer.visible = false;
         layers.volunteerStrike.visible = false;
 
-        if (isStrike && isVolDelay) {
-            layers.volunteerStrike.visible = true;
-        } else if (isStrike) {
-            layers.strike.visible = true;
-        } else if (isVolDelay) {
-            layers.volunteer.visible = true;
+        if (isStrike && isVolDelay) layers.volunteerStrike.visible = true;
+        else if (isStrike) layers.strike.visible = true;
+        else if (isVolDelay) layers.volunteer.visible = true;
+        else layers.normal.visible = true;
+    };
+
+    await fetchAndBuildLayer("/api/stations", layers.normal);
+    view.when(() => { if (loader) loader.remove(); });
+
+    (async () => {
+        await fetchAndBuildLayer("/api/strike-stations", layers.strike);
+        await fetchAndBuildLayer("/api/volunteer-stations", layers.volunteer);
+        await fetchAndBuildLayer("/api/volunteer-strike-stations", layers.volunteerStrike);
+    })();
+
+    const routeColours = ["rgb(251, 44, 54)", "rgb(255, 105, 0)", "rgb(254, 154, 0)", "rgb(240, 177, 0)", "rgb(124, 207, 0)", "rgb(0, 201, 80)", "rgb(0, 188, 125)", "rgb(0, 187, 167)", "rgb(0, 184, 219)", "rgb(0, 166, 244)"];
+
+    const updateSidebarForRoutes = (processedData, addressName) => {
+        defaultSidebar.classList.add("hidden");
+        routeSidebar.classList.remove("hidden");
+
+        routeAddressEl.textContent = addressName || "Searching location...";
+
+        routeStationListEl.innerHTML = "";
+
+        const sortedForList = [...processedData].sort((a, b) => a.station.driveTime - b.station.driveTime);
+
+        sortedForList.forEach(item => {
+            const li = document.createElement("li");
+            li.className = "flex items-center justify-between p-3 rounded-lg bg-zinc-800/50 border-l-4";
+            li.style.borderLeftColor = item.colour;
+
+            li.innerHTML = `
+                <div class="flex flex-col">
+                    <span class="text-sm font-medium text-slate-200">${item.station.station.name}</span>
+                    <span class="text-xs text-zinc-500">${item.station.distance.toFixed(2)} km</span>
+                </div>
+                <div class="text-right">
+                     <span class="block text-lg font-bold text-slate-100 leading-none">
+                        ${item.station.driveTime}<span class="text-xs font-normal text-zinc-500 ml-1">min</span>
+                     </span>
+                </div>
+            `;
+            routeStationListEl.appendChild(li);
+        });
+    };
+
+    const fetchAndDisplayRoutes = async (point) => {
+        routeLayer.removeAll();
+        routeStationListEl.innerHTML = '<li class="text-zinc-500 text-sm animate-pulse">Calculating routes...</li>';
+
+        const res = await fetch(
+            `/api/get-directions/${point.longitude}/${point.latitude}/${strikeToggle.checked}`
+        );
+        const json = await res.json();
+
+        const processedData = json.map((station, i) => ({
+            station,
+            colour: routeColours[i] || "rgb(255,255,255)"
+        }));
+
+        const sortedForDrawing = [...processedData].sort((a, b) => b.station.distance - a.station.distance);
+
+        sortedForDrawing.forEach(({ station, colour }) => {
+            drawRoute(station.directions, colour);
+        });
+
+        const addressRes = await fetch(`/api/reverse/${point.longitude}/${point.latitude}/`);
+        const addressJson = await addressRes.json();
+
+        updateSidebarForRoutes(processedData, addressJson.display_name);
+    };
+
+    const setRouteMode = () => {
+        currentMode = "route";
+
+        layers.normal.visible = false;
+        layers.strike.visible = false;
+        layers.volunteer.visible = false;
+        layers.volunteerStrike.visible = false;
+
+        routeLayer.visible = true;
+        exitBtn.classList.remove("hidden");
+    };
+
+    const setNormalMode = () => {
+        currentMode = "layer";
+        lastClickedPoint = null;
+
+        routeLayer.removeAll();
+        routeLayer.visible = false;
+        exitBtn.classList.add("hidden");
+
+        defaultSidebar.classList.remove("hidden");
+        routeSidebar.classList.add("hidden");
+        routeAddressEl.textContent = "";
+        routeStationListEl.innerHTML = "";
+
+        updateLayerVisibility();
+    };
+
+    const handleToggleChange = () => {
+        if (currentMode === "route" && lastClickedPoint) {
+            fetchAndDisplayRoutes(lastClickedPoint);
         } else {
-            layers.normal.visible = true;
+            updateLayerVisibility();
         }
     };
 
-    strikeToggle.addEventListener("change", updateVisibility);
-    volToggle.addEventListener("change", updateVisibility);
+    strikeToggle.addEventListener("change", handleToggleChange);
+    volToggle.addEventListener("change", handleToggleChange);
+
+    view.on("click", async (event) => {
+        const point = view.toMap(event);
+        if(!point) return;
+
+        lastClickedPoint = point;
+
+        setRouteMode();
+        await fetchAndDisplayRoutes(point);
+    });
+
+    exitBtn.addEventListener("click", () => {
+        setNormalMode();
+    });
 });
