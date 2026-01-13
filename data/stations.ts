@@ -3572,8 +3572,8 @@ const stations: Station[] = [
         callsignPrefix: "AIRCHRI"
     },
     {
-        x: 172.6484458,
-        y: -43.53455297,
+        x: 172.3757808,
+        y: -43.57984096,
         name: "Canterbury High Country",
         type: StationType.RURAL,
         callsignPrefix: "CANT19"

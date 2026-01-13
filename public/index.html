@@ -21,19 +21,77 @@
         <div class="relative h-[70vh] w-full overflow-hidden rounded-xl border border-zinc-800">
             <div id="map" class="absolute inset-0"></div>
 
-               <div id="map-loading" class="absolute inset-0 z-10 flex items-center justify-center bg-zinc-950/80 text-sm text-zinc-300">
-                    Loading map…
-                </div>
+            <div id="map-loading" class="absolute inset-0 z-10 flex items-center justify-center bg-zinc-950/80 text-sm text-zinc-300">
+                <span class="flex items-center gap-2">
+                    <svg class="h-5 w-5 animate-spin text-emerald-500" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg>
+                    Loading map...
+                </span>
+            </div>
         </div>
 
-        <aside class="space-y-4 rounded-xl border border-zinc-800 bg-zinc-900 p-4">
-            <h2 class="text-lg font-medium">Text goes here</h2>
+        <aside class="space-y-6 rounded-xl border border-zinc-800 bg-zinc-900 p-6">
+            <div class="space-y-4 border-b border-zinc-800 pb-6">
+                <div class="flex items-center justify-between">
+                    <div class="flex flex-col">
+                        <span class="text-sm font-medium text-slate-200">NZPFU Strike</span>
+                        <span class="text-xs text-zinc-500">Simulate reduced capacity during a strike.</span>
+                    </div>
 
-            <p class="text-sm text-zinc-400">
-                - explain added time to volunteer + rural stations <br/>
-                - explain colours/keys <br/>
-                - explain career toggle for strikes (we need a toggle for career) <br/>
-            </p>
+                    <label class="relative inline-flex cursor-pointer items-center">
+                        <input type="checkbox" id="strike-toggle" class="peer sr-only">
+                        <div class="peer h-6 w-11 rounded-full bg-zinc-700 after:absolute after:left-[2px] after:top-[2px] after:h-5 after:w-5 after:rounded-full after:border after:border-gray-300 after:bg-white after:transition-all after:content-[''] peer-checked:bg-emerald-600 peer-checked:after:translate-x-full peer-checked:after:border-white peer-focus:outline-none"></div>
+                    </label>
+                </div>
+
+                <div class="flex items-center justify-between">
+                    <div class="flex flex-col">
+                        <span class="text-sm font-medium text-slate-200">Volunteer Delay</span>
+                        <span class="text-xs text-zinc-500">Add 3 mins to volunteer stations.</span>
+                    </div>
+                    <label class="relative inline-flex cursor-pointer items-center">
+                        <input type="checkbox" id="volunteer-toggle" class="peer sr-only">
+                        <div class="peer h-6 w-11 rounded-full bg-zinc-700 after:absolute after:left-[2px] after:top-[2px] after:h-5 after:w-5 after:rounded-full after:border after:border-gray-300 after:bg-white after:transition-all after:content-[''] peer-checked:bg-emerald-600 peer-checked:after:translate-x-full peer-checked:after:border-white peer-focus:outline-none"></div>
+                    </label>
+                </div>
+            </div>
+
+            <div class="space-y-4">
+                <div class="grid grid-cols-2 gap-x-6 gap-y-3 text-sm">
+                    <div class="flex items-center justify-between">
+                        <span class="flex items-center gap-2">
+                            <span class="h-3 w-3 rounded-full bg-emerald-500"></span>
+                                Within 8 minutes
+                        </span>
+                    </div>
+
+                    <div class="flex items-center justify-between">
+                        <span class="flex items-center gap-2">
+                            <span class="h-3 w-3 rounded-full bg-orange-500"></span>
+                                Within 10 minutes
+                        </span>
+                   </div>
+
+                    <div class="flex items-center justify-between">
+                        <span class="flex items-center gap-2">
+                            <span class="h-3 w-3 rounded-full bg-red-500"></span>
+                                Within 15 minutes
+                        </span>
+                    </div>
+
+                    <div class="flex items-center justify-between">
+                        <span class="flex items-center gap-2">
+                            <span class="h-3 w-3 rounded-full bg-zinc-500"></span>
+                                Over 15 minutes
+                        </span>
+                    </div>
+                </div>
+
+                <hr class="border-zinc-800">
+
+                <p class="text-xs text-zinc-500">
+                    right click on any address or search.... when you do, it hides the other layers and puts the actual routes each of the stations would take onto the map. nzpfu strike toggle should work on this bit too, same with volunteer delay. then a little x to hide the routes and go back to normal layers.
+                </p>
+            </div>
         </aside>
     </div>
 </div>

@@ -1,52 +1,82 @@
-import {loadJson, saveJson} from "../util/json.ts";
-import {getStations} from "../data/stations.ts";
-import {calculateResponseTimePolygon, globalDeOverLap} from "./isochrones.ts";
+import { loadJson, saveJson } from "../util/json.ts";
+import { getStations, StationType } from "../data/stations.ts";
+import { calculateResponseTimePolygon, globalDeOverLap } from "./isochrones.ts";
 
-const RAW_CACHE_FILE = "./cache/isochrones_raw.json";
-const FINAL_CACHE_FILE = "./cache/isochrones.json";
-
-const stationsTable: { name: string; table: any[], x: number, y: number }[] = [];
-
-export async function getOrGenerateData(){
-    const finalCache = await loadJson(FINAL_CACHE_FILE);
-    if (finalCache) {
-        console.log("Using cached data")
-        return stationsTable.push(...finalCache)
-    }
-
-    const rawCache = (await loadJson(RAW_CACHE_FILE)) ?? {};
-    const perStationResults: { name: string; table: any[], x: number, y: number }[] = [];
-
-    for (const s of getStations()){
-       let table = rawCache[s.name];
-
-       if (!table) {
-           console.log(`Generating initial isochrones for ${s.name}`);
-           table = await calculateResponseTimePolygon(s);
-
-           if (!table){
-               console.log(`No isochrones for station ${s.name}, skipping?`);
-               rawCache[s.name] = null;
-               await saveJson(RAW_CACHE_FILE, rawCache)
-           }
-
-           rawCache[s.name] = table;
-           await saveJson(RAW_CACHE_FILE, rawCache)
-       }
-
-       perStationResults.push({
-           name: s.name,
-           table,
-           x: s.x,
-           y: s.y
-       })
-    }
-
-    const computed = globalDeOverLap(perStationResults);
-    await saveJson(FINAL_CACHE_FILE, computed);
-    stationsTable.push(...computed);
+type StationTable = { name: string; table: any[]; x: number; y: number };
+type GeometryMode = "standard" | "volunteerDelay";
+interface Scenario {
+    geometry: GeometryMode;
+    strike: boolean;
 }
 
-export function getStationsTable() {
-    return stationsTable;
+const RAW = (g: GeometryMode) => `./cache/isochrones_raw_${g}.json`;
+const FINAL = (g: GeometryMode, strike: boolean) => `./cache/isochrones_${strike ? "strike_" : ""}${g}.json`;
+
+async function generateData(s: Scenario) {
+    const finalCache = await loadJson(FINAL(s.geometry, s.strike));
+    if (finalCache) return finalCache;
+
+    console.log(`Generating data for scenario: geometry: ${s.geometry}, strike: ${s.strike}`)
+
+    const rawCache = (await loadJson(RAW(s.geometry))) ?? {};
+    const perStation: StationTable[] = [];
+
+    for (const st of getStations()) {
+        if (s.strike && (st.type === StationType.CAREER || st.type === StationType.COMPOSITE)) continue;
+
+        let table = rawCache[st.name];
+
+        if (!table) {
+            console.log(`Generating raw isochrones for ${st.name}`)
+            table = await calculateResponseTimePolygon(st, {
+                volunteerDelay: s.geometry === "volunteerDelay"
+            });
+
+            rawCache[st.name] = table ?? null;
+            await saveJson(RAW(s.geometry), rawCache);
+        }
+
+        if (!table) continue;
+
+        perStation.push({
+            name: st.name,
+            table,
+            x: st.x,
+            y: st.y
+        });
+    }
+
+    const computed = globalDeOverLap(perStation);
+    await saveJson(FINAL(s.geometry, s.strike), computed);
+    return computed;
 }
+
+export const generateStandardData = () => generateData({ geometry: "standard", strike: false });
+
+export const generateVolunteerDelayData = () => generateData({ geometry: "volunteerDelay", strike: false });
+
+export const generateStrikeData = () => generateData({ geometry: "standard", strike: true });
+
+export const generateStrikeVolunteerDelayData = () => generateData({ geometry: "volunteerDelay", strike: true });
+
+export async function getStationsTable(scenario: Scenario): Promise<StationTable[]> {
+  const data = await loadJson(FINAL(scenario.geometry, scenario.strike));
+  return data ?? [];
+}
+
+export async function getStandardStationsTable(): Promise<StationTable[]> {
+  return getStationsTable({ geometry: "standard", strike: false });
+}
+
+export async function getVolunteerDelayStationsTable(): Promise<StationTable[]> {
+  return getStationsTable({ geometry: "volunteerDelay", strike: false });
+}
+
+export async function getStrikeStationsTable(): Promise<StationTable[]> {
+  return getStationsTable({ geometry: "standard", strike: true });
+}
+
+export async function getStrikeVolunteerDelayStationsTable(): Promise<StationTable[]> {
+  return getStationsTable({ geometry: "volunteerDelay", strike: true });
+}
+

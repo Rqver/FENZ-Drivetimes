@@ -1,23 +1,33 @@
 import * as turf from "npm:@turf/turf";
-import { Station } from "../data/stations.ts";
+import {Station, StationType} from "../data/stations.ts";
 import {haversine, safeDifference} from "../util/geography.ts";
 
 const ORS_URL = Deno.env.get("OPEN_ROUTE_SERVICE_URL");
 
-export async function calculateResponseTimePolygon(station: Station) {
+
+export async function calculateResponseTimePolygon(station: Station, opts?: { volunteerDelay?: boolean }) {
     if (!ORS_URL) return console.warn("No ORS URL in ENV");
+
+    const isIndustry = station.type === StationType.INDUSTRY;
+    const isVolunteer = ((station.type === StationType.VOLUNTEER) || (station.type === StationType.RURAL)) && opts?.volunteerDelay;
+
+    const DELAY = isVolunteer ? 180 : 0;
+
+    const baseRanges = isIndustry ? [380] : [480, 600, 900];
+
+    const ranges = baseRanges.map(r => Math.max(0, r - DELAY));
 
     const res = await fetch(`${ORS_URL}/isochrones/driving-car`, {
         method: "POST",
         body: JSON.stringify({
             locations: [[station.x, station.y]],
-            range: [480, 600, 900],
+            range: ranges,
             range_type: "time",
             smoothing: 0,
             intersections: false
         }),
         headers: {
-            "Accept": "application/json, application/geo+json, application/gpx+xml, img/png; charset=utf-8",
+            Accept: "application/json, application/geo+json, application/gpx+xml, img/png; charset=utf-8",
             "Content-Type": "application/json; charset=utf-8"
         }
     });
