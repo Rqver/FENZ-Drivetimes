@@ -36,16 +36,19 @@ async function calculateDirections(a: Point, b: Point) {
     return {distance, driveTime, json}
 }
 
-export async function getDriveTimes(x: number, y: number, strike = false){
+export async function getDriveTimes(x: number, y: number, strike = false, delay = false){
     const closestStations = findClosestStations(x, y, 20, strike);
 
     const promises = closestStations.map(async (station) => {
         const directions = await calculateDirections({x: station.x, y: station.y}, {x, y});
         if (!directions) return null;
 
+        let driveTime = Math.round(directions.driveTime / 60);
+        if (delay && (station.type === StationType.VOLUNTEER || station.type === StationType.RURAL)) driveTime += 3;
+
         return {
             station,
-            driveTime: Math.round(directions.driveTime / 60),
+            driveTime: driveTime,
             distance: directions.distance / 1000,
             directions: directions.json
         }

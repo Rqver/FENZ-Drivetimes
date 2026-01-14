@@ -158,7 +158,7 @@ require([
         routeLayer.removeAll();
         routeStationListEl.innerHTML = '<li class="text-zinc-500 text-sm animate-pulse">Calculating routes...</li>';
 
-        const res = await fetch(`/api/get-directions/${point.longitude}/${point.latitude}/${strikeToggle.checked}`);
+        const res = await fetch(`/api/get-directions/${point.longitude}/${point.latitude}?strike=${strikeToggle.checked}&delay=${volToggle.checked}`);
         const json = await res.json();
 
         const processedData = json.map((station, i) => ({
@@ -212,6 +212,8 @@ require([
 
         routeAddressEl.textContent = "";
         routeStationListEl.innerHTML = "";
+
+        searchInput.value = ""
 
         updateLayerVisibility();
     };
