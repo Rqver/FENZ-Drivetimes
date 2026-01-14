@@ -2,8 +2,9 @@ require([
     "esri/Map",
     "esri/views/MapView",
     "esri/layers/GraphicsLayer",
-    "esri/Graphic"
-], async (Map, MapView, GraphicsLayer, Graphic) => {
+    "esri/Graphic",
+    "esri/geometry/Point"
+], async (Map, MapView, GraphicsLayer, Graphic, Point) => {
     const map = new Map({ basemap: "dark-gray-vector" });
     const view = new MapView({
         container: "map",
@@ -28,6 +29,9 @@ require([
     const volToggle = document.getElementById("volunteer-toggle");
     const exitBtn = document.getElementById("exit-routes");
     const loader = document.getElementById("map-loading");
+
+    const searchInput = document.getElementById("search-input");
+    const searchResults = document.getElementById("search-results");
 
     const defaultSidebar = document.getElementById("default-sidebar");
     const routeSidebar = document.getElementById("route-sidebar");
@@ -152,9 +156,7 @@ require([
         routeLayer.removeAll();
         routeStationListEl.innerHTML = '<li class="text-zinc-500 text-sm animate-pulse">Calculating routes...</li>';
 
-        const res = await fetch(
-            `/api/get-directions/${point.longitude}/${point.latitude}/${strikeToggle.checked}`
-        );
+        const res = await fetch(`/api/get-directions/${point.longitude}/${point.latitude}/${strikeToggle.checked}`);
         const json = await res.json();
 
         const processedData = json.map((station, i) => ({
@@ -201,6 +203,88 @@ require([
 
         updateLayerVisibility();
     };
+
+    const debounce = (func, wait) => {
+        let timeout;
+        return function executedFunction(...args) {
+            const later = () => {
+                clearTimeout(timeout);
+                func(...args);
+            };
+            clearTimeout(timeout);
+            timeout = setTimeout(later, wait);
+        };
+    };
+
+    const renderSearchResults = (features) => {
+        searchResults.innerHTML = "";
+
+        if (!features || features.length === 0) {
+            searchResults.classList.add("hidden");
+            return;
+        }
+
+        features.forEach(feature => {
+            const props = feature.properties;
+            if (props.osm_key === "highway" || props.countrycode !== "NZ") return;
+
+            const mainText = props.name || `${props.housenumber || ''} ${props.street || ''}`.trim();
+            const subText = [props.district, props.state].filter(Boolean).join(", ");
+            const displayText = mainText ? `${mainText}, ${subText}` : subText;
+
+            const li = document.createElement("li");
+            li.className = "cursor-pointer border-b border-zinc-800 px-4 py-3 text-sm text-slate-200 last:border-0 hover:bg-zinc-800 hover:text-emerald-500";
+            li.innerHTML = `
+                <div class="font-medium">${mainText || subText}</div>
+                <div class="text-xs text-zinc-500">${subText}</div>
+            `;
+
+            li.addEventListener("click", () => {
+                const [lon, lat] = feature.geometry.coordinates;
+
+                searchResults.classList.add("hidden");
+                searchInput.value = displayText;
+
+                const point = new Point({
+                    longitude: lon,
+                    latitude: lat,
+                    spatialReference: { wkid: 4326 }
+                });
+
+                lastClickedPoint = point;
+
+                view.goTo({ target: point, zoom: 12 });
+                setRouteMode();
+                fetchAndDisplayRoutes(point);
+            });
+
+            searchResults.appendChild(li);
+        });
+
+        searchResults.classList.remove("hidden");
+    };
+
+    searchInput.addEventListener("input", debounce(async (e) => {
+        const query = e.target.value;
+        if (query.length < 3) {
+            searchResults.classList.add("hidden");
+            return;
+        }
+
+        try {
+            const res = await fetch(`/api/search?search=${encodeURIComponent(query)}`);
+            const data = await res.json();
+            renderSearchResults(data.features);
+        } catch (err) {
+            console.error("Search failed", err);
+        }
+    }, 300));
+
+    document.addEventListener("click", (e) => {
+        if (!searchInput.contains(e.target) && !searchResults.contains(e.target)) {
+            searchResults.classList.add("hidden");
+        }
+    });
 
     const handleToggleChange = () => {
         if (currentMode === "route" && lastClickedPoint) {
