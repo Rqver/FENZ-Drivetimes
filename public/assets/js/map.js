@@ -30,6 +30,8 @@ require([
     const exitBtn = document.getElementById("exit-routes");
     const loader = document.getElementById("map-loading");
 
+    const legendSection = document.getElementById("legend-section");
+
     const searchInput = document.getElementById("search-input");
     const searchResults = document.getElementById("search-results");
 
@@ -152,7 +154,7 @@ require([
         });
     };
 
-    const fetchAndDisplayRoutes = async (point) => {
+    const fetchAndDisplayRoutes = async (point, locationText) => {
         routeLayer.removeAll();
         routeStationListEl.innerHTML = '<li class="text-zinc-500 text-sm animate-pulse">Calculating routes...</li>';
 
@@ -170,11 +172,16 @@ require([
             drawRoute(station.directions, colour);
         });
 
+        if (locationText){
+           return updateSidebarForRoutes(processedData, locationText);
+        }
+
         const addressRes = await fetch(`/api/reverse/${point.longitude}/${point.latitude}/`);
         const addressJson = await addressRes.json();
 
         updateSidebarForRoutes(processedData, addressJson.display_name);
     };
+
 
     const setRouteMode = () => {
         currentMode = "route";
@@ -186,6 +193,8 @@ require([
 
         routeLayer.visible = true;
         exitBtn.classList.remove("hidden");
+
+        legendSection.classList.add("hidden");
     };
 
     const setNormalMode = () => {
@@ -198,6 +207,9 @@ require([
 
         defaultSidebar.classList.remove("hidden");
         routeSidebar.classList.add("hidden");
+
+        legendSection.classList.remove("hidden");
+
         routeAddressEl.textContent = "";
         routeStationListEl.innerHTML = "";
 
@@ -255,7 +267,7 @@ require([
 
                 view.goTo({ target: point, zoom: 12 });
                 setRouteMode();
-                fetchAndDisplayRoutes(point);
+                fetchAndDisplayRoutes(point, displayText);
             });
 
             searchResults.appendChild(li);

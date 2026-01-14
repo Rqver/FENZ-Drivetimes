@@ -610,10 +610,10 @@ const stations: Station[] = [
         northIsland: true
     },
     {
-        x: 174.6259815,
-        y: -36.78627261,
+        x: 174.61916425699056,
+        y: -36.7937611209229,
         name: "RNZAF Base Auckland F5204",
-        type: StationType.CAREER,
+        type: StationType.INDUSTRY,
         callsignPrefix: "WHEN68",
         northIsland: true
     },

@@ -56,5 +56,5 @@ export async function getDriveTimes(x: number, y: number, strike = false){
     return results
         .filter((r): r is NonNullable<typeof r> => r !== null)
         .sort((a, b) => a.driveTime - b.driveTime)
-        .slice(0, 8);
+        .slice(0, 9);
 }
