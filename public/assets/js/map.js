@@ -1,10 +1,11 @@
 require([
     "esri/Map",
     "esri/views/MapView",
+    "esri/layers/FeatureLayer",
     "esri/layers/GraphicsLayer",
     "esri/Graphic",
     "esri/geometry/Point"
-], async (Map, MapView, GraphicsLayer, Graphic, Point) => {
+], async (Map, MapView, FeatureLayer, GraphicsLayer, Graphic, Point) => {
     const map = new Map({ basemap: "dark-gray-vector" });
     const view = new MapView({
         container: "map",
@@ -13,11 +14,69 @@ require([
         zoom: 10.5
     });
 
+    const fields = [
+        { name: "ObjectID", alias: "ObjectID", type: "oid" },
+        { name: "name", alias: "Station Name", type: "string" },
+        { name: "responseTime", alias: "Response Time", type: "integer" }
+    ];
+
+    const createLayer = (title) => {
+        return new FeatureLayer({
+            title: title,
+            visible: false,
+            source: [],
+            fields: fields,
+            objectIdField: "ObjectID",
+            geometryType: "polygon",
+            spatialReference: { wkid: 4326 },
+            renderer: {
+                type: "unique-value",
+                field: "responseTime",
+                defaultSymbol: { type: "simple-fill" },
+                uniqueValueInfos: [
+                    {
+                        value: 380,
+                        symbol: {
+                            type: "simple-fill",
+                            color: "rgba(80,200,120,0.2)",
+                            outline: { width: 0.0 }
+                        }
+                    },
+                    {
+
+                        value: 480,
+                        symbol: {
+                            type: "simple-fill",
+                            color: "rgba(80,200,120,0.2)",
+                            outline: { width: 0.0 }
+                        }
+                    },
+                    {
+                        value: 600,
+                        symbol: {
+                            type: "simple-fill",
+                            color: "rgba(255,165,0,0.2)",
+                            outline: { width: 0 }
+                        }
+                    },
+                    {
+                        value: 900,
+                        symbol: {
+                            type: "simple-fill",
+                            color: "rgba(205,28,24,0.2)",
+                            outline: { width: 0 }
+                        }
+                    }
+                ]
+            },
+        });
+    };
+
     const layers = {
-        normal: new GraphicsLayer({ title: "Normal", visible: true }),
-        strike: new GraphicsLayer({ title: "Strike", visible: false }),
-        volunteer: new GraphicsLayer({ title: "Volunteer Delay", visible: false }),
-        volunteerStrike: new GraphicsLayer({ title: "Vol Delay + Strike", visible: false })
+        normal: createLayer("Normal"),
+        strike: createLayer("Strike"),
+        volunteer: createLayer("Volunteer Delay"),
+        volunteerStrike: createLayer("Vol Delay + Strike")
     };
 
     map.addMany([layers.normal, layers.strike, layers.volunteer, layers.volunteerStrike]);
@@ -47,39 +106,45 @@ require([
         try {
             const res = await fetch(url);
             const json = await res.json();
+
             const graphicsToAdd = [];
+            let oidCounter = 1;
 
             for (const station of json) {
                 const polys = [];
+
                 for (const feature of station.table) {
                     const coords = feature.geometry.coordinates;
+                    const timeVal = Number(feature.properties.value);
+
                     if (feature.geometry.type === "MultiPolygon") {
                         for (const poly of coords) {
-                            polys.push({ rings: poly, time: Number(feature.properties.value) });
+                            polys.push({ rings: poly, time: timeVal });
                         }
                     } else {
-                        polys.push({ rings: coords, time: Number(feature.properties.value) });
+                        polys.push({ rings: coords, time: timeVal });
                     }
                 }
 
                 for (const item of polys) {
-                    let colour;
-                    if (item.time <= 480) colour = "rgba(80,200,120,0.2)";
-                    else if (item.time <= 600) colour = "rgba(255,165,0,0.2)";
-                    else if (item.time <= 900) colour = "rgba(205,28,24,0.2)";
-
-                    graphicsToAdd.push(new Graphic({
-                        geometry: { type: "polygon", rings: item.rings },
-                        symbol: {
-                            type: "simple-fill",
-                            color: colour,
-                            outline: { width: 0.0, color: "rgb(0,0,0)" }
+                    graphicsToAdd.push({
+                        geometry: {
+                            type: "polygon",
+                            rings: item.rings
                         },
-                        attributes: { name: station.name, responseTime: item.time }
-                    }));
+                        attributes: {
+                            ObjectID: oidCounter++,
+                            name: station.name,
+                            responseTime: item.time
+                        }
+                    });
                 }
             }
-            targetLayer.addMany(graphicsToAdd);
+
+            await targetLayer.applyEdits({
+                addFeatures: graphicsToAdd
+            });
+
             return true;
         } catch (error) {
             console.error(`Error loading ${url}:`, error);
@@ -113,14 +178,39 @@ require([
         else layers.normal.visible = true;
     };
 
-    await fetchAndBuildLayer("/api/stations", layers.normal);
-    view.when(() => { if (loader) loader.remove(); });
+    try {
+        let loadedCount = 0;
+        const totalFiles = 4;
 
-    (async () => {
-        await fetchAndBuildLayer("/api/strike-stations", layers.strike);
-        await fetchAndBuildLayer("/api/volunteer-stations", layers.volunteer);
-        await fetchAndBuildLayer("/api/volunteer-strike-stations", layers.volunteerStrike);
-    })();
+        const updateProgress = () => {
+            loadedCount++;
+
+            const textSpan = loader.querySelector("span");
+            if (textSpan) {
+                const spinner = textSpan.querySelector("svg").outerHTML;
+                textSpan.innerHTML = `${spinner} Loading layers... ${loadedCount}/${totalFiles}`;
+            }
+        };
+
+        await Promise.all([
+            fetchAndBuildLayer("/api/stations", layers.normal).then(updateProgress),
+            fetchAndBuildLayer("/api/strike-stations", layers.strike).then(updateProgress),
+            fetchAndBuildLayer("/api/volunteer-stations", layers.volunteer).then(updateProgress),
+            fetchAndBuildLayer("/api/volunteer-strike-stations", layers.volunteerStrike).then(updateProgress)
+        ]);
+
+        updateLayerVisibility();
+
+        view.when(() => {
+            if (loader) loader.remove();
+        });
+
+    } catch (error) {
+        console.error("Critical error loading map layers:", error);
+        if (loader) {
+            loader.innerHTML = `<div class="text-red-500 font-bold text-center">Error loading map data.<br>Please refresh the page.</div>`;
+        }
+    }
 
     const routeColours = ["rgb(251, 44, 54)", "rgb(255, 105, 0)", "rgb(254, 154, 0)", "rgb(240, 177, 0)", "rgb(124, 207, 0)", "rgb(0, 201, 80)", "rgb(0, 188, 125)", "rgb(0, 187, 167)", "rgb(0, 184, 219)", "rgb(0, 166, 244)"];
 
