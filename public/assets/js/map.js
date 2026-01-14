@@ -127,13 +127,26 @@ require([
     let currentMode = "layer"; // 'layer' or 'route'
     let lastClickedPoint = null; // Stores {latitude, longitude}
 
+    const BATCH_SIZE = 2000;
     const fetchAndBuildLayer = async (url, targetLayer) => {
         try {
             const res = await fetch(url);
             const json = await res.json();
 
-            const graphicsToAdd = [];
+            let graphicsBatch = [];
             let oidCounter = 1;
+
+            const flushBatch = async () => {
+                if (graphicsBatch.length === 0) return;
+
+                await targetLayer.applyEdits({
+                    addFeatures: graphicsBatch
+                });
+
+                graphicsBatch = [];
+
+                await new Promise(resolve => setTimeout(resolve, 20));
+            };
 
             for (const station of json) {
                 const polys = [];
@@ -152,7 +165,7 @@ require([
                 }
 
                 for (const item of polys) {
-                    graphicsToAdd.push({
+                    graphicsBatch.push({
                         geometry: {
                             type: "polygon",
                             rings: item.rings
@@ -163,12 +176,14 @@ require([
                             responseTime: item.time
                         }
                     });
+
+                    if (graphicsBatch.length >= BATCH_SIZE) {
+                        await flushBatch();
+                    }
                 }
             }
 
-            await targetLayer.applyEdits({
-                addFeatures: graphicsToAdd
-            });
+            await flushBatch();
 
             return true;
         } catch (error) {
