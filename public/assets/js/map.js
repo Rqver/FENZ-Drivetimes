@@ -66,6 +66,31 @@ require([
                             color: "rgba(205,28,24,0.2)",
                             outline: { width: 0 }
                         }
+                    },
+                    {
+
+                        value: 300,
+                        symbol: {
+                            type: "simple-fill",
+                            color: "rgba(80,200,120,0.2)",
+                            outline: { width: 0.0 }
+                        }
+                    },
+                    {
+                        value: 420,
+                        symbol: {
+                            type: "simple-fill",
+                            color: "rgba(255,165,0,0.2)",
+                            outline: { width: 0 }
+                        }
+                    },
+                    {
+                        value: 720,
+                        symbol: {
+                            type: "simple-fill",
+                            color: "rgba(205,28,24,0.2)",
+                            outline: { width: 0 }
+                        }
                     }
                 ]
             },
