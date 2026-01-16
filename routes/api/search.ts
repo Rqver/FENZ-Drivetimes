@@ -5,9 +5,10 @@ export default {
     url: '/api/search',
     type: 'GET',
     callback: async (req: express.Request, res: express.Response) => {
-        if (!PHOTON_URL || !req.query.search) return {};
+        if (!PHOTON_URL || !req.query.search) return res.json({});
+        const query = String(req.query.search || "")
 
-        const fetchRes = await fetch(`${PHOTON_URL}/api?q=${encodeURIComponent(req.query.search as string)}`)
+        const fetchRes = await fetch(`${PHOTON_URL}/api?q=${encodeURIComponent(query)}`)
         res.json(await fetchRes.json());
     }
 }

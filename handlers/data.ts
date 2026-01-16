@@ -13,6 +13,12 @@ const RAW = (g: GeometryMode) => `./cache/isochrones_raw_${g}.json`;
 const FINAL = (g: GeometryMode, strike: boolean) => `./cache/isochrones_${strike ? "strike_" : ""}${g}.json`;
 
 async function generateData(s: Scenario) {
+    try {
+    await Deno.mkdir("./cache", { recursive: true });
+    } catch (err) {
+        if (!(err instanceof Deno.errors.AlreadyExists)) throw err;
+    }
+
     const finalCache = await loadJson(FINAL(s.geometry, s.strike));
     if (finalCache) return finalCache;
 
