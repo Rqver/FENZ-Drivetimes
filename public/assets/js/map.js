@@ -127,6 +127,18 @@ require([
     let currentMode = "layer"; // 'layer' or 'route'
     let lastClickedPoint = null; // Stores {latitude, longitude}
 
+    const setControlsEnabled = (enabled) => {
+        strikeToggle.disabled = !enabled;
+        volToggle.disabled = !enabled;
+        searchInput.disabled = !enabled;
+
+        strikeToggle.classList.toggle("opacity-50", !enabled);
+        volToggle.classList.toggle("opacity-50", !enabled);
+        searchInput.classList.toggle("opacity-50", !enabled);
+    };
+
+    setControlsEnabled(false);
+
     const BATCH_SIZE = 2000;
     const fetchAndBuildLayer = async (url, targetLayer) => {
         try {
@@ -245,6 +257,7 @@ require([
             if (loader) loader.remove();
         });
 
+        setControlsEnabled(true);
     } catch (error) {
         console.error("Critical error loading map layers:", error);
         if (loader) {

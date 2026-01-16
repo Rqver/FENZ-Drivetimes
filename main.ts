@@ -7,7 +7,7 @@ import {
     generateVolunteerDelayData
 } from "./handlers/data.ts";
 
-const PORT = 6710;
+const port = Deno.env.get("PORT") || 6710
 
 async function main(){
     await generateStandardData();
@@ -19,8 +19,8 @@ async function main(){
     const app = express();
     await initRoutes(app, "routes");
 
-    app.listen(PORT);
-    console.log(`Listening on http://localhost:${PORT}`)
+    app.listen(port);
+    console.log(`Listening on http://localhost:${port}`)
 }
 
 main();
