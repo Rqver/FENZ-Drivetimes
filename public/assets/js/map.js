@@ -228,6 +228,7 @@ require([
         else if (isStrike) layers.strike.visible = true;
         else if (isVolDelay) layers.volunteer.visible = true;
         else layers.normal.visible = true;
+        umami.track("change_layer")
     };
 
     try {
@@ -323,6 +324,7 @@ require([
         const addressJson = await addressRes.json();
 
         updateSidebarForRoutes(processedData, addressJson.display_name);
+        umami.track("check_route")
     };
 
 
