@@ -7,7 +7,7 @@ import {
     generateVolunteerDelayData
 } from "./handlers/data.ts";
 
-const port = Deno.env.get("PORT") || 6710
+const port = Number(Deno.env.get("PORT") ?? "6710")
 
 async function main(){
     await generateStandardData();
