@@ -8,6 +8,7 @@ import {
 } from "./handlers/data.ts";
 
 const port = Number(Deno.env.get("PORT") ?? "6710")
+const host = Deno.env.get("HOST") || "127.0.0.1"
 
 async function main(){
     await generateStandardData();
@@ -19,8 +20,8 @@ async function main(){
     const app = express();
     await initRoutes(app, "routes");
 
-    app.listen(port);
-    console.log(`Listening on http://localhost:${port}`)
+    app.listen(port, host);
+    console.log(`Listening on http://${host}:${port}`)
 }
 
 main();

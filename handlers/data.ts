@@ -1,4 +1,5 @@
 import { loadJson, saveJson } from "../util/json.ts";
+import { CACHE_DIR, cachePath } from "../util/cache.ts";
 import { getStations, StationType } from "../data/stations.ts";
 import { calculateResponseTimePolygon, globalDeOverLap } from "./isochrones.ts";
 
@@ -9,15 +10,12 @@ interface Scenario {
     strike: boolean;
 }
 
-const RAW = (g: GeometryMode) => `./cache/isochrones_raw_${g}.json`;
-const FINAL = (g: GeometryMode, strike: boolean) => `./cache/isochrones_${strike ? "strike_" : ""}${g}.json`;
+const RAW = (g: GeometryMode) => cachePath(`isochrones_raw_${g}.json`);
+const FINAL = (g: GeometryMode, strike: boolean) => cachePath(`isochrones_${strike ? "strike_" : ""}${g}.json`);
 
 async function generateData(s: Scenario) {
-    try {
-    await Deno.mkdir("./cache", { recursive: true });
-    } catch (err) {
-        if (!(err instanceof Deno.errors.AlreadyExists)) throw err;
-    }
+    // recursive: true succeeds when the directory already exists.
+    await Deno.mkdir(CACHE_DIR, { recursive: true });
 
     const finalCache = await loadJson(FINAL(s.geometry, s.strike));
     if (finalCache) return finalCache;

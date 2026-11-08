@@ -31,6 +31,10 @@ Rename the `.env.example` file to `.env`. The project requires four enviroment v
 - `PHOTON_URL`: The URL of your Photon instance.
 - `PORT`: The port the web server will start on.
 
+Optional:
+- `HOST`: The address the web server binds to. Defaults to `127.0.0.1`; set `0.0.0.0` to listen on every interface.
+- `CACHE_DIR`: Where generated isochrones are stored. Defaults to `./cache`.
+
 ### Starting FENZ-Drivetimes
 
 - Ensure you have [Deno](https://deno.com/) installed.
@@ -40,7 +44,7 @@ Rename the `.env.example` file to `.env`. The project requires four enviroment v
 
 
 ### First Load
-On first load, the application will generate all isochrones for every station in New Zealand. This will take a long time. After this load, these files are stored in `cache/`, and start-up is instant.
+On first load, the application will generate all isochrones for every station in New Zealand. This will take a long time. After this load, these files are stored in `cache/` (or `CACHE_DIR`), and start-up is instant.
 
 
 #### This project is not associated with, made in collaboration with, or endorsed by Fire & Emergency New Zealand (FENZ). 
